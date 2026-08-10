@@ -68,6 +68,9 @@ export function buildUI(state, hooks) {
   const shapeBody = section(panel, 'Shape', true);
   const list = el('div', 'shape-list');
   shapeBody.append(list);
+  const launch = el('button', 'lab-launch', '✨ Make your own shape!');
+  launch.addEventListener('click', () => hooks.openLab());
+  list.append(launch);
   let lastGroup = null;
   const items = new Map();
   for (const def of SHAPES) {

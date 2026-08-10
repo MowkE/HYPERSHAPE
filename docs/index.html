@@ -66,6 +66,62 @@
     </div>
   </div>
 
+  <aside id="lab">
+    <div id="lab-head">
+      <h2>✨ Shape Lab</h2>
+      <button id="lab-close" title="Close">✕</button>
+    </div>
+    <p id="lab-tagline">Invent your own 4D shape. It appears behind this panel — drag the sliders and watch it change!</p>
+
+    <div id="lab-tabs">
+      <button id="lab-tab-magic" class="lab-tab active">🪄 Magic</button>
+      <button id="lab-tab-code" class="lab-tab">👩‍💻 Code</button>
+    </div>
+
+    <div id="lab-magic">
+      <div class="lab-step-label">1️⃣ Pick your base</div>
+      <div id="lab-bases"></div>
+      <div class="lab-step-label">2️⃣ Drag the sliders</div>
+      <div id="lab-magic-sliders"></div>
+      <div class="lab-step-label">3️⃣ Stuck? Roll the dice!</div>
+      <button id="lab-dice">🎲 Surprise me!</button>
+    </div>
+
+    <div id="lab-code-pane" hidden>
+      <details class="lab-guide" open>
+        <summary>How do I make a shape? (20 seconds)</summary>
+        <p>A shape is just a <b>list of points</b>. Every point is 4 numbers:
+        <code>[x, y, z, w]</code>. The 4th number is the one your eyes can't
+        see — so it becomes <b>color</b>. Connect points with edges and
+        <code>return { verts, edges }</code>. That's the whole secret.</p>
+        <p><b>Cheat codes:</b> <code>minDistEdges(verts)</code> connects every
+        closest pair of points for you · <code>gridSurface((u,v) =&gt; [x,y,z,w], {nu, nv})</code>
+        weaves a whole sheet · <code>paramCurve(t =&gt; [x,y,z,w], {n})</code> draws a
+        glowing thread · <code>merge(a, b)</code> glues shapes together ·
+        <code>triCliques(n, edges)</code> adds faces so the CT-scanner can slice it.</p>
+        <p>Pick an example below, press <b>▶ Run</b>, then change one number
+        and run it again. That's how everyone learns.</p>
+      </details>
+      <div id="lab-toolbar">
+        <select id="lab-examples"></select>
+        <button id="lab-run">▶ Run</button>
+      </div>
+      <textarea id="lab-code" spellcheck="false" rows="14"></textarea>
+    </div>
+
+    <div id="lab-error" hidden></div>
+
+    <div id="lab-footer">
+      <div class="lab-step-label">4️⃣ Keep it & show your friends</div>
+      <div id="lab-save-row">
+        <input id="lab-name" placeholder="name your shape…" maxlength="24" />
+        <button id="lab-save">💾 Save</button>
+        <button id="lab-share">🔗 Copy link</button>
+      </div>
+      <div id="lab-saved"></div>
+    </div>
+  </aside>
+
   <div id="gl-error">
     <div>
       <h2>WebGL2 unavailable</h2>

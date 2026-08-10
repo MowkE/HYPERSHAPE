@@ -4,6 +4,7 @@
 
 import { Renderer } from './renderer.js';
 import { SHAPES, buildShape } from './shapes.js';
+import { initLab } from './lab.js';
 import { computeSlice } from './slicer.js';
 import { buildUI, updateInfoCard, drawLegend, flashToast } from './ui.js';
 import {
@@ -59,8 +60,10 @@ function loadShape(id, keepParams = false) {
   history.replaceState(null, '', url);
 }
 
+let lab = null;
+
 const ui = buildUI(state, {
-  selectShape: (id) => loadShape(id),
+  selectShape: (id) => { lab?.close(); loadShape(id); },
   setParam: (key, value) => {
     state.params[key] = value;
     shape = buildShape(state.shapeId, state.params);
@@ -71,6 +74,7 @@ const ui = buildUI(state, {
     state.spinning = !state.spinning;
     ui.setSpinLabel(state.spinning);
   },
+  openLab: () => lab?.open(),
 });
 
 // ── input: left-drag = 3D orbit · right-drag = 4D rotation ──
@@ -123,7 +127,7 @@ canvas.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 window.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
   const idx = SHAPES.findIndex((s) => s.id === state.shapeId);
   switch (e.key) {
     case ' ':
@@ -176,6 +180,16 @@ if (window.innerWidth < 760) document.getElementById('panel').classList.remove('
 // ── boot ──
 const urlShape = new URL(window.location).searchParams.get('shape');
 loadShape(urlShape || 'tesseract');
+// the lab initializes after the default shape so a shared #lab= link wins
+lab = initLab({
+  onShape: (custom) => {
+    shape = custom;
+    state.shapeId = 'custom';
+    renderer.setShape(shape);
+    updateInfoCard(shape);
+    ui.setActiveShape({ id: 'custom' });
+  },
+});
 drawLegend(state);
 flashToast('drag — rotate in 3D · right-drag — rotate in 4D · scroll — zoom · shift+scroll — move along w');
 
