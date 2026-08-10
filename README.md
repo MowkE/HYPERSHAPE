@@ -2,7 +2,9 @@
 
 # 🔮 HYPERSHAPE
 
-### a 4D shape observatory — color is the fourth dimension
+### a 4D shape observatory — color is the fourth dimension 
+
+### my brain is shifting to see in the 4th dimension guys
 
 **[▶ Live demo](https://mowke.github.io/HYPERSHAPE/)** · zero dependencies · pure WebGL2 · MIT
 
