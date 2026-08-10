@@ -4,7 +4,7 @@
 
 ### a 4D shape observatory — color is the fourth dimension
 
-**[▶ Live demo](https://mowke.github.io/4d-Visualization/)** · zero dependencies · pure WebGL2 · MIT
+**[▶ Live demo](https://mowke.github.io/HYPERSHAPE/)** · zero dependencies · pure WebGL2 · MIT
 
 ![Hypershape — tesseract](docs/screenshots/hero-tesseract.png)
 
@@ -16,8 +16,8 @@ Every point of a 4D object has coordinates **(x, y, z, w)**. Your screen can sho
 
 | | |
 |:---:|:---:|
-| ![600-cell](docs/screenshots/600cell-turbo.png) **[600-Cell](https://mowke.github.io/4d-Visualization/?shape=600cell)** — 120 vertices, 720 edges, 600 tetrahedral cells | ![Hopf fibration](docs/screenshots/hopf-neon.png) **[Hopf Fibration](https://mowke.github.io/4d-Visualization/?shape=hopf)** — the 3-sphere as linked circles, no two touching |
-| ![Klein bottle](docs/screenshots/klein-ice.png) **[Klein Bottle](https://mowke.github.io/4d-Visualization/?shape=klein)** — self-intersecting in 3D, clean in 4D | ![Cross-section](docs/screenshots/slice-tesseract.png) **[CT-scan slicing](https://mowke.github.io/4d-Visualization/?shape=tesseract)** — a true 3D cross-section carved from the hyperplane w = w₀ |
+| ![600-cell](docs/screenshots/600cell-turbo.png) **[600-Cell](https://mowke.github.io/HYPERSHAPE/?shape=600cell)** — 120 vertices, 720 edges, 600 tetrahedral cells | ![Hopf fibration](docs/screenshots/hopf-neon.png) **[Hopf Fibration](https://mowke.github.io/HYPERSHAPE/?shape=hopf)** — the 3-sphere as linked circles, no two touching |
+| ![Klein bottle](docs/screenshots/klein-ice.png) **[Klein Bottle](https://mowke.github.io/HYPERSHAPE/?shape=klein)** — self-intersecting in 3D, clean in 4D | ![Cross-section](docs/screenshots/slice-tesseract.png) **[CT-scan slicing](https://mowke.github.io/HYPERSHAPE/?shape=tesseract)** — a true 3D cross-section carved from the hyperplane w = w₀ |
 
 ## The shape library
 
