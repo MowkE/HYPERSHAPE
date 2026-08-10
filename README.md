@@ -2,7 +2,7 @@
 
 # 🔮 HYPERSHAPE
 
-### a 4D shape observatory 
+### 4D shape observatory 
 
 ### my brain is shifting to see in the 4th dimension guys
 
