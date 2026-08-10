@@ -21,14 +21,38 @@ Every point of a 4D object has coordinates **(x, y, z, w)**. Your screen can sho
 
 ## The shape library
 
-**30+ shape families, hundreds of shapes via live parameters:**
+**38 shape families, hundreds of shapes via live parameters:**
 
 - **All six regular 4-polytopes** — 5-cell, tesseract, 16-cell, 24-cell (the one with no 3D analogue), 600-cell, and the 1200-edge 120-cell
-- **Rectified polytopes** — tesseract, 5-cell, and the 3600-edge rectified 600-cell
+- **Beyond regular** — rectified and truncated polytopes, the snub 24-cell, the tesseract⁠+⁠16-cell dual compound, and the **grand antiprism** (the 600-cell minus two perpendicular vertex rings — the strangest uniform polytope, only discovered in 1965)
 - **Prisms & products** — the p×q duoprism family (every combination 3–16 × 3–16), plus tetrahedral / octahedral / icosahedral / dodecahedral prisms
-- **Curved manifolds** — the Hopf fibration of the 3-sphere, the Clifford flat torus, the Klein bottle's true embedding, the spherinder, the hypercone
-- **Riemann surfaces** — the graphs of √z, log z, z², z³, 1/z, eᶻ, sin z live in ℝ⁴ = ℂ²; multi-valued sheets that must self-intersect in 3D pass by cleanly here, separated only by color
-- **4D curves** — (p,q) torus knots wound on the Clifford torus, and 4-frequency Lissajous knots
+- **Curved manifolds** — the Hopf fibration of the 3-sphere, the Clifford flat torus, the Klein bottle's true embedding, the real projective plane (non-orientable, impossible in 3D), the **tiger** (yes, that's its real name), the glome drawn as latitude shells, the spherinder, the hypercone
+- **Riemann surfaces** — the graphs of √z, log z, z², z³, 1/z, eᶻ, sin z, and the Joukowski airfoil map z + 1/z live in ℝ⁴ = ℂ²; multi-valued sheets that must self-intersect in 3D pass by cleanly here, separated only by color
+- **4D curves** — (p,q) torus knots, 4-frequency Lissajous knots, and the irrational winding that circles the Clifford torus forever without ever closing
+
+## 🧪 The Shape Lab — invent your own
+
+![Shape Lab](docs/screenshots/shape-lab.png)
+
+Click **✨ Make your own shape!** in the app and you get a workspace with two modes:
+
+**🪄 Magic mode — no code, kid-approved.** Four steps:
+1. **Pick a base** — 🍩 Donut, 🔮 Ball, 💫 Star, or 🎀 Ribbon
+2. **Drag the sliders** — waves, twist, wobble, points; the shape reshapes *instantly*
+3. **Stuck? Press 🎲 Surprise me!**
+4. **Name it, save it, copy the link** — the whole recipe packs into the URL, so your creation opens on anyone's screen
+
+**👩‍💻 Code mode — for when you want the real thing.** Write a tiny builder using the same helpers the built-in library uses, press ▶ Run:
+
+```js
+// Two circles in perpendicular planes.
+// In 4D they link through each other without ever touching!
+const ringA = paramCurve(t => [Math.cos(t), Math.sin(t), 0, 0], { n: 64 });
+const ringB = paramCurve(t => [0, 0, Math.cos(t), Math.sin(t)], { n: 64 });
+return merge(ringA, ringB);
+```
+
+The rules fit in one sentence: *a shape is a list of `[x, y, z, w]` points plus edges connecting them — return `{ verts, edges }` and the renderer does the rest.* Helpers do the heavy lifting: `minDistEdges` auto-connects every closest pair (that rule alone rebuilds most polytopes), `gridSurface` weaves parametric sheets, `paramCurve` draws glowing threads, `merge` glues pieces together, and `triCliques` adds faces so the CT-scanner can slice your creation. Five loadable examples walk you from "connect the dots" to complex-function graphs. Shared code links are never auto-run — recipients see the code first and press Run themselves.
 
 ## Controls
 
