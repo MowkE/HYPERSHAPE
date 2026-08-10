@@ -2,7 +2,7 @@
 
 # 🔮 HYPERSHAPE
 
-### a 4D shape observatory — color is the fourth dimension 
+### a 4D shape observatory 
 
 ### my brain is shifting to see in the 4th dimension guys
 
