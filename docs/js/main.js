@@ -26,6 +26,7 @@ const state = {
   palette: 0,
   bloom: 1.25,
   edgeBrightness: 0.95,
+  viewMode: 'wire',
   showEdges: true,
   showPoints: true,
   pointSize: 3.5,
@@ -237,6 +238,7 @@ function frame(now) {
 
   renderer.render({
     rot4, view, proj,
+    viewMode: state.viewMode,
     dist4: state.dist4,
     ortho4: state.ortho4,
     wTarget: state.wTarget,

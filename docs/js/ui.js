@@ -180,6 +180,15 @@ export function buildUI(state, hooks) {
   slider(wGrid, 'Focus tightness', 0.5, 8, 0.1, state.decay, (v) => { state.decay = v; });
   slider(wGrid, 'Ghost dim', 0, 1, 0.05, state.ghostDim, (v) => { state.ghostDim = v; });
 
+  // ── view-mode selector (bottom center) ──
+  const vmButtons = document.querySelectorAll('#viewmodes .vm');
+  for (const btn of vmButtons) {
+    btn.addEventListener('click', () => {
+      state.viewMode = btn.dataset.mode;
+      for (const b of vmButtons) b.classList.toggle('active', b === btn);
+    });
+  }
+
   return {
     setActiveShape(def) {
       for (const [id, item] of items) item.classList.toggle('active', id === def.id);

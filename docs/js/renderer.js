@@ -22,6 +22,7 @@ uniform int uOrtho4;
 uniform float uRadius;
 uniform float uPointSize;
 out float vW;
+out vec3 vViewPos;
 
 void main() {
   vec4 p = uRot4 * aPos4;
@@ -33,6 +34,7 @@ void main() {
     p3 *= uDist4 / denom;
   }
   vec4 vpos = uView * vec4(p3, 1.0);
+  vViewPos = vpos.xyz;
   gl_Position = uProj * vpos;
   gl_PointSize = uPointSize * (10.0 / max(-vpos.z, 0.6));
 }`;
@@ -40,12 +42,15 @@ void main() {
 const SHAPE_FS = `#version 300 es
 precision highp float;
 in float vW;
+in vec3 vViewPos;
 uniform sampler2D uPalette;
 uniform float uPaletteRow;
 uniform float uWTarget;
 uniform float uFocusDecay;   // 0 disables focus mode
 uniform float uBrightness;
 uniform int uIsPoint;
+uniform int uShading;        // 1 = flat-lit faces (normal from derivatives)
+uniform float uBands;        // >0 = posterize w into discrete shells
 out vec4 fragColor;
 
 void main() {
@@ -54,7 +59,21 @@ void main() {
     if (dot(d, d) > 0.25) discard;
   }
   float t = clamp(vW * 0.5 + 0.5, 0.0, 1.0);
-  vec3 col = texture(uPalette, vec2(t, uPaletteRow)).rgb;
+  vec3 col;
+  if (uBands > 0.5) {
+    // discrete w-shells: quantized color with dark seams between bands
+    float tq = (floor(t * uBands) + 0.5) / uBands;
+    col = texture(uPalette, vec2(tq, uPaletteRow)).rgb;
+    float f = abs(fract(t * uBands) - 0.5);
+    col *= smoothstep(0.5, 0.32, f);
+  } else {
+    col = texture(uPalette, vec2(t, uPaletteRow)).rgb;
+  }
+  if (uShading == 1) {
+    vec3 N = normalize(cross(dFdx(vViewPos), dFdy(vViewPos)));
+    vec3 L = normalize(vec3(0.4, 0.8, 0.5));
+    col *= 0.38 + 0.62 * abs(dot(N, L));
+  }
   float a = 1.0;
   if (uFocusDecay > 0.0) {
     a = max(exp(-uFocusDecay * abs(vW - uWTarget)), 0.04);
@@ -155,7 +174,7 @@ function compile(gl, vsSrc, fsSrc) {
   return prog;
 }
 
-function makeTarget(gl, w, h) {
+function makeTarget(gl, w, h, withDepth = false) {
   const tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -166,6 +185,12 @@ function makeTarget(gl, w, h) {
   const fbo = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  if (withDepth) {
+    const rbo = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rbo);
+  }
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   return { tex, fbo, w, h };
 }
@@ -197,17 +222,23 @@ export class Renderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-    // shape geometry buffers
-    this.shapeVao = gl.createVertexArray();
+    // shape geometry buffers: one VBO, two VAOs (edge indices / tri indices)
     this.shapeVbo = gl.createBuffer();
     this.shapeIbo = gl.createBuffer();
-    gl.bindVertexArray(this.shapeVao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.shapeVbo);
+    this.shapeTriIbo = gl.createBuffer();
     const locPos4 = gl.getAttribLocation(this.shapeProg, 'aPos4');
-    gl.enableVertexAttribArray(locPos4);
-    gl.vertexAttribPointer(locPos4, 4, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.shapeIbo);
-    gl.bindVertexArray(null);
+    const makeVao = (ibo) => {
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.shapeVbo);
+      gl.enableVertexAttribArray(locPos4);
+      gl.vertexAttribPointer(locPos4, 4, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+      gl.bindVertexArray(null);
+      return vao;
+    };
+    this.shapeVao = makeVao(this.shapeIbo);
+    this.shapeTriVao = makeVao(this.shapeTriIbo);
 
     // slice geometry buffers (streamed from the CPU each frame)
     this.sliceVao = gl.createVertexArray();
@@ -220,6 +251,7 @@ export class Renderer {
     gl.bindVertexArray(null);
 
     this.nEdgeIndices = 0;
+    this.nTriIndices = 0;
     this.nVerts = 0;
     this.targets = null;
     this.resize();
@@ -235,7 +267,7 @@ export class Renderer {
     this.canvas.height = h;
     const bw = Math.max(1, w >> 2), bh = Math.max(1, h >> 2);
     this.targets = {
-      scene: makeTarget(gl, w, h),
+      scene: makeTarget(gl, w, h, true), // depth buffer for solid mode
       blurA: makeTarget(gl, bw, bh),
       blurB: makeTarget(gl, bw, bh),
     };
@@ -249,6 +281,13 @@ export class Renderer {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.shapeIbo);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, shape.edges, gl.STATIC_DRAW);
     gl.bindVertexArray(null);
+    if (shape.tris) {
+      gl.bindVertexArray(this.shapeTriVao);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.shapeTriIbo);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, shape.tris, gl.STATIC_DRAW);
+      gl.bindVertexArray(null);
+    }
+    this.nTriIndices = shape.tris ? shape.tris.length : 0;
     this.nEdgeIndices = shape.edges.length;
     this.nVerts = shape.verts.length / 4;
     this.radius = shape.radius;
@@ -260,11 +299,11 @@ export class Renderer {
     this.resize();
     const { scene, blurA, blurB } = this.targets;
 
-    // ── pass 1: shape into offscreen target, additive ──
+    // ── pass 1: shape into offscreen target ──
     gl.bindFramebuffer(gl.FRAMEBUFFER, scene.fbo);
     gl.viewport(0, 0, scene.w, scene.h);
     gl.clearColor(0.010, 0.010, 0.008, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);
     gl.disable(gl.DEPTH_TEST);
@@ -284,18 +323,61 @@ export class Renderer {
     gl.bindTexture(gl.TEXTURE_2D, this.paletteTex);
     gl.uniform1i(u('uPalette'), 0);
 
-    gl.bindVertexArray(this.shapeVao);
-    if (state.showEdges && this.nEdgeIndices) {
+    const ghost = sliceData ? state.ghostDim : 1;
+    const dpr = window.devicePixelRatio || 1;
+    // modes that need faces fall back to wireframe when the shape has none
+    let mode = state.viewMode || 'wire';
+    if (!this.nTriIndices && (mode === 'solid' || mode === 'xray' || mode === 'shell')) mode = 'wire';
+
+    const drawEdges = (brightness, bands = 0) => {
+      if (!this.nEdgeIndices) return;
       gl.uniform1i(u('uIsPoint'), 0);
-      gl.uniform1f(u('uBrightness'), state.edgeBrightness * (sliceData ? state.ghostDim : 1));
+      gl.uniform1i(u('uShading'), 0);
+      gl.uniform1f(u('uBands'), bands);
+      gl.uniform1f(u('uBrightness'), brightness);
       gl.uniform1f(u('uPointSize'), 1);
+      gl.bindVertexArray(this.shapeVao);
       gl.drawElements(gl.LINES, this.nEdgeIndices, gl.UNSIGNED_INT, 0);
-    }
-    if (state.showPoints && this.nVerts) {
+    };
+    const drawPoints = (brightness, size) => {
+      if (!this.nVerts) return;
       gl.uniform1i(u('uIsPoint'), 1);
-      gl.uniform1f(u('uBrightness'), state.edgeBrightness * 1.4 * (sliceData ? state.ghostDim : 1));
-      gl.uniform1f(u('uPointSize'), state.pointSize * (window.devicePixelRatio || 1));
+      gl.uniform1i(u('uShading'), 0);
+      gl.uniform1f(u('uBands'), 0);
+      gl.uniform1f(u('uBrightness'), brightness);
+      gl.uniform1f(u('uPointSize'), size * dpr);
+      gl.bindVertexArray(this.shapeVao);
       gl.drawArrays(gl.POINTS, 0, this.nVerts);
+    };
+    const drawFaces = (brightness, bands = 0) => {
+      gl.uniform1i(u('uIsPoint'), 0);
+      gl.uniform1i(u('uShading'), 1);
+      gl.uniform1f(u('uBands'), bands);
+      gl.uniform1f(u('uBrightness'), brightness);
+      gl.uniform1f(u('uPointSize'), 1);
+      gl.bindVertexArray(this.shapeTriVao);
+      gl.drawElements(gl.TRIANGLES, this.nTriIndices, gl.UNSIGNED_INT, 0);
+    };
+
+    if (mode === 'solid') {
+      // opaque lit surface — the one mode that uses the depth buffer
+      gl.disable(gl.BLEND);
+      gl.enable(gl.DEPTH_TEST);
+      drawFaces(0.95 * ghost);
+      gl.disable(gl.DEPTH_TEST);
+      gl.enable(gl.BLEND);
+    } else if (mode === 'xray') {
+      drawFaces(0.16 * state.edgeBrightness * ghost);
+      drawEdges(0.45 * state.edgeBrightness * ghost);
+      if (state.showPoints) drawPoints(state.edgeBrightness * ghost, state.pointSize);
+    } else if (mode === 'shell') {
+      drawFaces(0.30 * state.edgeBrightness * ghost, 9);
+      drawEdges(0.25 * state.edgeBrightness * ghost, 9);
+    } else if (mode === 'cloud') {
+      drawPoints(state.edgeBrightness * 1.5 * ghost, state.pointSize * 2.4);
+    } else {
+      if (state.showEdges) drawEdges(state.edgeBrightness * ghost);
+      if (state.showPoints) drawPoints(state.edgeBrightness * 1.4 * ghost, state.pointSize);
     }
     gl.bindVertexArray(null);
 

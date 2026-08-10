@@ -66,7 +66,7 @@ The rules fit in one sentence: *a shape is a list of `[x, y, z, w]` points plus 
 | shift + scroll | move along the w axis |
 | space | pause rotation · `R` reset · `S` screenshot · `←`/`→` cycle shapes |
 
-Six independent rotation-speed sliders (one per plane), five color palettes, perspective/orthographic 4D projection, a **focus shell** that fades away all geometry far from a chosen w, and a **cross-section mode** that cuts the shape with the hyperplane w = w₀ and shows you the true 3D slice — the 4D version of a CT scan.
+**Five view modes** — WIRE (glowing wireframe), SOLID (opaque lit surface, the w-gradient painted across its cells), X-RAY (translucent glass), SHELLS (discrete w-contour bands), and CLOUD (vertex nebula). Plus six independent rotation-speed sliders (one per plane), five color palettes, perspective/orthographic 4D projection, a **focus shell** that fades away all geometry far from a chosen w, and a **cross-section mode** that cuts the shape with the hyperplane w = w₀ and shows you the true 3D slice — the 4D version of a CT scan.
 
 ## How it works
 
