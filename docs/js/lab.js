@@ -22,11 +22,27 @@ const STORE_KEY = 'hypershape-lab';
 
 // ───────────────────────── magic mode ─────────────────────────
 
+// monochrome line icons — they inherit the button's amber/dim color
+const ICON = (body) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">${body}</svg>`;
+
 const BASES = {
-  donut: { emoji: '🍩', label: 'Donut' },
-  ball: { emoji: '🔮', label: 'Ball' },
-  star: { emoji: '💫', label: 'Star' },
-  ribbon: { emoji: '🎀', label: 'Ribbon' },
+  donut: {
+    icon: ICON('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/>'),
+    label: 'Donut',
+  },
+  ball: {
+    icon: ICON('<circle cx="12" cy="12" r="8.5"/><ellipse cx="12" cy="12" rx="8.5" ry="3.2"/><ellipse cx="12" cy="12" rx="3.2" ry="8.5"/>'),
+    label: 'Ball',
+  },
+  star: {
+    icon: ICON('<path d="M12 3 L14.2 8.9 L20.6 9.2 L15.6 13.2 L17.3 19.3 L12 15.8 L6.7 19.3 L8.4 13.2 L3.4 9.2 L9.8 8.9 Z"/>'),
+    label: 'Star',
+  },
+  ribbon: {
+    icon: ICON('<path d="M12 12 L4.5 7.5 L4.5 16.5 Z"/><path d="M12 12 L19.5 7.5 L19.5 16.5 Z"/><circle cx="12" cy="12" r="1.7"/>'),
+    label: 'Ribbon',
+  },
 };
 
 // which sliders each base shows
@@ -244,10 +260,10 @@ export function initLab({ onShape }) {
     }
   };
 
-  for (const [base, { emoji, label }] of Object.entries(BASES)) {
+  for (const [base, { icon, label }] of Object.entries(BASES)) {
     const btn = document.createElement('button');
     btn.className = 'lab-base' + (base === magicParams.base ? ' active' : '');
-    btn.innerHTML = `${emoji}<span>${label}</span>`;
+    btn.innerHTML = `${icon}<span>${label}</span>`;
     btn.addEventListener('click', () => {
       magicParams.base = base;
       for (const b of $('lab-bases').children) b.classList.remove('active');
@@ -314,7 +330,7 @@ export function initLab({ onShape }) {
       const name = document.createElement('span');
       name.textContent = item.name;
       const play = document.createElement('button');
-      play.textContent = '▶';
+      play.textContent = '▸';
       play.title = 'Show it';
       play.addEventListener('click', () => applySaved(item));
       const del = document.createElement('button');

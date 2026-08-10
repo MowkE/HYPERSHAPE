@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🔮 HYPERSHAPE
+# HYPERSHAPE
 
 ### 4D shape observatory 
 
 ### my brain is shifting to see in the 4th dimension guys
 
-**[▶ Live demo](https://mowke.github.io/HYPERSHAPE/)** · zero dependencies · pure WebGL2 · MIT
+**[Live demo](https://mowke.github.io/HYPERSHAPE/)** · zero dependencies · pure WebGL2 · MIT
 
 ![Hypershape — tesseract](docs/screenshots/hero-tesseract.png)
 
@@ -32,19 +32,19 @@ Every point of a 4D object has coordinates **(x, y, z, w)**. Your screen can sho
 - **Riemann surfaces** — the graphs of √z, log z, z², z³, 1/z, eᶻ, sin z, and the Joukowski airfoil map z + 1/z live in ℝ⁴ = ℂ²; multi-valued sheets that must self-intersect in 3D pass by cleanly here, separated only by color
 - **4D curves** — (p,q) torus knots, 4-frequency Lissajous knots, and the irrational winding that circles the Clifford torus forever without ever closing
 
-## 🧪 The Shape Lab — invent your own
+## The Shape Lab — invent your own
 
 ![Shape Lab](docs/screenshots/shape-lab.png)
 
-Click **✨ Make your own shape!** in the app and you get a workspace with two modes:
+Click **SHAPE LAB · BUILD YOUR OWN** in the app and you get a workspace with two modes:
 
-**🪄 Magic mode — no code, kid-approved.** Four steps:
-1. **Pick a base** — 🍩 Donut, 🔮 Ball, 💫 Star, or 🎀 Ribbon
+**Magic mode — no code, kid-approved.** Four steps:
+1. **Pick a base** — donut, ball, star, or ribbon
 2. **Drag the sliders** — waves, twist, wobble, points; the shape reshapes *instantly*
-3. **Stuck? Press 🎲 Surprise me!**
+3. **Stuck? Press SURPRISE ME**
 4. **Name it, save it, copy the link** — the whole recipe packs into the URL, so your creation opens on anyone's screen
 
-**👩‍💻 Code mode — for when you want the real thing.** Write a tiny builder using the same helpers the built-in library uses, press ▶ Run:
+**Code mode — for when you want the real thing.** Write a tiny builder using the same helpers the built-in library uses, press RUN:
 
 ```js
 // Two circles in perpendicular planes.
@@ -111,4 +111,4 @@ desktop/               Python + ModernGL desktop visualizer
 
 Built by [Samahith Thellakal](https://github.com/MowkE). Companion project to [ThunderRhombus/4DVisualizerQuiz](https://github.com/ThunderRhombus/4DVisualizerQuiz) — a pygame 4D visualizer by a friend that this project trades shapes and ideas with.
 
-MIT licensed. If this made you *feel* the fourth dimension for a second, a ⭐ is appreciated.
+MIT licensed. If this made you *feel* the fourth dimension for a second, a star is appreciated.
