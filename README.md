@@ -109,6 +109,6 @@ desktop/               Python + ModernGL desktop visualizer
 
 ## Credits
 
-Built by [Samahith Thellakal](https://github.com/MowkE). Companion project to [ThunderRhombus/4DVisualizerQuiz](https://github.com/ThunderRhombus/4DVisualizerQuiz) — a pygame 4D visualizer by a friend that this project trades shapes and ideas with.
+ Companion project to [ThunderRhombus/4DVisualizerQuiz](https://github.com/ThunderRhombus/4DVisualizerQuiz) — a pygame 4D visualizer by a friend that this project trades shapes and ideas with.
 
 MIT licensed. If this made you *feel* the fourth dimension for a second, a star is appreciated.
