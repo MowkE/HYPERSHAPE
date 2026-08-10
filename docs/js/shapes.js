@@ -17,8 +17,8 @@
  *   • Curved manifolds: parametric (u,v) grids and curves.
  */
 
-const PHI = (1 + Math.sqrt(5)) / 2;
-const TAU = Math.PI * 2;
+export const PHI = (1 + Math.sqrt(5)) / 2;
+export const TAU = Math.PI * 2;
 
 // ───────────────────────────── helpers ─────────────────────────────
 
@@ -41,7 +41,7 @@ function dedup(verts) {
 }
 
 /** Connect every pair of vertices at (approximately) the minimum distance. */
-function minDistEdges(verts) {
+export function minDistEdges(verts) {
   let min = Infinity;
   const n = verts.length;
   const d2 = (a, b) => {
@@ -65,7 +65,7 @@ function minDistEdges(verts) {
 }
 
 /** All triangles (3-cliques) of an edge graph — the faces of simplex-faced polytopes. */
-function triCliques(nVerts, edges) {
+export function triCliques(nVerts, edges) {
   const adj = Array.from({ length: nVerts }, () => new Set());
   for (let e = 0; e < edges.length; e += 2) {
     adj[edges[e]].add(edges[e + 1]);
@@ -111,7 +111,7 @@ function signedPerms(template, { evenOnly = false } = {}) {
  * f(u, v) → [x, y, z, w];  u ∈ [u0, u1], v ∈ [v0, v1].
  * wrapU/wrapV close the surface in that direction.
  */
-function gridSurface(f, { nu, nv, u0 = 0, u1 = TAU, v0 = 0, v1 = TAU, wrapU = false, wrapV = false }) {
+export function gridSurface(f, { nu, nv, u0 = 0, u1 = TAU, v0 = 0, v1 = TAU, wrapU = false, wrapV = false }) {
   const cols = wrapU ? nu : nu + 1;
   const rows = wrapV ? nv : nv + 1;
   const verts = [];
@@ -141,7 +141,7 @@ function gridSurface(f, { nu, nv, u0 = 0, u1 = TAU, v0 = 0, v1 = TAU, wrapU = fa
 }
 
 /** Parametric curve → polyline. */
-function paramCurve(f, { n, t0 = 0, t1 = TAU, closed = true }) {
+export function paramCurve(f, { n, t0 = 0, t1 = TAU, closed = true }) {
   const count = closed ? n : n + 1;
   const verts = [];
   for (let i = 0; i < count; i++) verts.push(f(t0 + ((t1 - t0) * i) / n));
@@ -152,7 +152,7 @@ function paramCurve(f, { n, t0 = 0, t1 = TAU, closed = true }) {
 }
 
 /** Merge several {verts, edges, tris} parts into one. */
-function merge(...parts) {
+export function merge(...parts) {
   const verts = [], edges = [], tris = [];
   for (const p of parts) {
     const off = verts.length;
@@ -166,7 +166,7 @@ function merge(...parts) {
 const TARGET_RADIUS = 1.5;
 
 /** Package + scale a raw shape to the common radius. */
-function finalize({ verts, edges, tris }) {
+export function finalize({ verts, edges, tris }) {
   let maxR = 0;
   for (const v of verts) maxR = Math.max(maxR, Math.hypot(v[0], v[1], v[2], v[3]));
   const s = maxR > 1e-9 ? TARGET_RADIUS / maxR : 1;
@@ -263,6 +263,62 @@ function build120Cell() {
   ]);
   const edges = minDistEdges(verts);
   return { verts, edges, tris: null }; // pentagonal faces — slicer uses edge points
+}
+
+/** Uniform truncation: slice every corner back to two points per edge. */
+function truncate(builder, t) {
+  const { verts, edges } = builder();
+  const pts = [];
+  for (let e = 0; e < edges.length; e += 2) {
+    const a = verts[edges[e]], b = verts[edges[e + 1]];
+    pts.push(a.map((x, i) => x + (b[i] - x) * t));
+    pts.push(a.map((x, i) => x + (b[i] - x) * (1 - t)));
+  }
+  const v = dedup(pts);
+  const newEdges = minDistEdges(v);
+  return { verts: v, edges: newEdges, tris: triCliques(v.length, newEdges) };
+}
+
+function buildSnub24Cell() {
+  // 96 vertices: the even permutations of (0, ±1/φ, ±1, ±φ)
+  const verts = signedPerms([0, 1 / PHI, 1, PHI], { evenOnly: true });
+  const edges = minDistEdges(verts);
+  return { verts, edges, tris: triCliques(verts.length, edges) };
+}
+
+function buildGrandAntiprism() {
+  // The 600-cell minus two completely orthogonal decagon rings.
+  const { verts } = build600Cell();
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+  const v0 = verts.find((v) => Math.abs(v[0] - 1) < 1e-9 && Math.abs(v[1]) < 1e-9
+                            && Math.abs(v[2]) < 1e-9 && Math.abs(v[3]) < 1e-9);
+  const v1 = verts.find((v) => Math.abs(dot(v, v0) - PHI / 2) < 1e-6);
+  // walk the decagon through v0, v1: on a great circle with 36° steps,
+  // consecutive vertices obey v[k+1] = φ·v[k] − v[k−1]
+  const ring = new Set([key4(v0), key4(v1)]);
+  let prev = v0, cur = v1;
+  for (let k = 0; k < 8; k++) {
+    const next = cur.map((x, i) => PHI * x - prev[i]);
+    ring.add(key4(next));
+    prev = cur; cur = next;
+  }
+  // the second decagon lies in the completely orthogonal plane
+  for (const v of verts) {
+    if (Math.abs(dot(v, v0)) < 1e-6 && Math.abs(dot(v, v1)) < 1e-6) ring.add(key4(v));
+  }
+  const remaining = verts.filter((v) => !ring.has(key4(v)));
+  const edges = minDistEdges(remaining);
+  return { verts: remaining, edges, tris: triCliques(remaining.length, edges) };
+}
+
+function buildCompound8and16() {
+  // The tesseract and its dual, inscribed in the same 3-sphere.
+  const c16 = build16Cell();
+  return merge(buildTesseract(), {
+    verts: c16.verts.map((v) => v.map((x) => x * 2)),
+    edges: c16.edges,
+    tris: c16.tris,
+  });
 }
 
 /** Rectification: vertices at the midpoints of another polytope's edges. */
@@ -474,6 +530,44 @@ function buildHypercone() {
   return shape;
 }
 
+function buildTiger(shells) {
+  // The tiger: |circle in xy| and |circle in zw| both held at fixed distance —
+  // a 3-manifold swept out by a 1-parameter family of flat tori (shells).
+  const R1 = 0.8, R2 = 0.8, r = 0.38;
+  const parts = [];
+  for (let s = 0; s < shells; s++) {
+    const th = (TAU * s) / shells;
+    const a = R1 + r * Math.cos(th), b = R2 + r * Math.sin(th);
+    parts.push(gridSurface(
+      (u, v) => [a * Math.cos(u), a * Math.sin(u), b * Math.cos(v), b * Math.sin(v)],
+      { nu: 26, nv: 26, wrapU: true, wrapV: true },
+    ));
+  }
+  return merge(...parts);
+}
+
+function buildProjectivePlane(res) {
+  // The real projective plane cannot live in 3D without crashing through
+  // itself; this quartic map embeds it cleanly in R⁴ (drawn as its double cover).
+  return gridSurface((u, v) => {
+    const x = Math.cos(v) * Math.cos(u);
+    const y = Math.cos(v) * Math.sin(u);
+    const z = Math.sin(v);
+    return [x * y, x * z, y * z, (x * x - y * y) * 0.5];
+  }, { nu: res, nv: Math.round(res / 2), u0: 0, u1: TAU, v0: -Math.PI / 2, v1: Math.PI / 2, wrapU: true });
+}
+
+function buildGlomeGrid(shells) {
+  // The 3-sphere in hyperspherical coordinates: a stack of ordinary spheres
+  // that grow, peak at the equator, and shrink again as w sweeps from +1 to −1.
+  const parts = [];
+  for (let s = 1; s <= shells; s++) {
+    const chi = (Math.PI * s) / (shells + 1);
+    parts.push(buildSphereGrid(20, 10, Math.sin(chi), Math.cos(chi)));
+  }
+  return merge(...parts);
+}
+
 // ─────────────── complex-function graphs (Riemann surfaces) ───────────────
 // The graph of f: ℂ → ℂ is the surface (Re z, Im z, Re f, Im f) ⊂ ℝ⁴.
 // Multi-valued functions (√z, log z) self-intersect in any 3D picture but
@@ -518,13 +612,18 @@ const COMPLEX_SHAPES = {
     f: (x, y) => [Math.sin(x) * Math.cosh(y), Math.cos(x) * Math.sinh(y)],
     opts: { nu: 40, nv: 24, u0: -Math.PI, u1: Math.PI, v0: -1.2, v1: 1.2, wrapU: true },
   },
+  jouk: {
+    // Joukowski map z + 1/z — the conformal map behind early airfoil design
+    f: (x, y) => { const d = x * x + y * y; return [x + x / d, y - y / d]; },
+    opts: { nu: 20, nv: 56, u0: 0.45, u1: 2.1, v0: 0, v1: TAU, wrapV: true, polar: true },
+  },
 };
 
 // ───────────────────────────── the registry ─────────────────────────────
 
 const G = {
   REGULAR: 'Regular polytopes',
-  MODIFIED: 'Rectified polytopes',
+  MODIFIED: 'Beyond regular',
   PRODUCTS: 'Prisms & products',
   CURVED: 'Curved manifolds',
   COMPLEX: 'Riemann surfaces',
@@ -585,6 +684,36 @@ export const SHAPES = [
     cells: '600 tetrahedra + 120 icosahedra',
     blurb: '720 vertices and 3600 edges — a glittering shell of icosahedra and octahedra-like cells. Turn the bloom up.',
     build: () => rectify(build600Cell),
+  },
+  {
+    id: 'trunc-tesseract', name: 'Truncated Tesseract', group: G.MODIFIED,
+    cells: '8 truncated cubes + 16 tetrahedra',
+    blurb: 'A tesseract with every corner sliced off — each cube face becomes an octagon, and a tiny tetrahedron blooms at every old vertex.',
+    build: () => truncate(buildTesseract, 1 / (2 + Math.SQRT2)),
+  },
+  {
+    id: 'trunc-5cell', name: 'Truncated 5-Cell', group: G.MODIFIED,
+    cells: '5 truncated tetrahedra + 5 tetrahedra',
+    blurb: 'The 5-cell with its corners cut at exactly one-third — the sweet spot that makes every new face a regular polygon.',
+    build: () => truncate(build5Cell, 1 / 3),
+  },
+  {
+    id: 'snub24', name: 'Snub 24-Cell', group: G.MODIFIED,
+    cells: '120 tetrahedra + 24 icosahedra',
+    blurb: 'Ninety-six vertices from the even permutations of (0, 1/φ, 1, φ). Sits exactly between the 24-cell and the 600-cell — a shape mid-metamorphosis.',
+    build: () => buildSnub24Cell(),
+  },
+  {
+    id: 'grand-antiprism', name: 'Grand Antiprism', group: G.MODIFIED,
+    cells: '300 tetrahedra + 20 pentagonal antiprisms',
+    blurb: 'Take the 600-cell and delete two rings of ten vertices that circle each other in perpendicular planes. Discovered only in 1965 — the strangest uniform polytope.',
+    build: () => buildGrandAntiprism(),
+  },
+  {
+    id: 'compound-8-16', name: 'Tesseract + 16-Cell Compound', group: G.MODIFIED,
+    cells: 'two dual polytopes, one sphere',
+    blurb: 'A shape and its dual inscribed in the same 3-sphere — the 4D version of the star made by a cube and an octahedron interlocked.',
+    build: () => buildCompound8and16(),
   },
   {
     id: 'duoprism', name: 'Duoprism p×q', group: G.PRODUCTS,
@@ -661,6 +790,33 @@ export const SHAPES = [
     build: () => buildHypercone(),
   },
   {
+    id: 'tiger', name: 'Tiger', group: G.CURVED,
+    cells: 'toratope: a circle of flat tori',
+    blurb: 'Yes, that\'s its real mathematical name. A donut whose tube is itself bent around a second, perpendicular donut — drawn as a ring of nested flat tori.',
+    params: [
+      { key: 'shells', label: 'Torus shells', min: 3, max: 10, step: 1, def: 6 },
+    ],
+    build: ({ shells }) => buildTiger(shells),
+  },
+  {
+    id: 'projective-plane', name: 'Projective Plane', group: G.CURVED,
+    cells: 'non-orientable, one-sided surface',
+    blurb: 'The Klein bottle\'s stranger sibling: a surface where every straight path brings you home mirror-flipped. Impossible to build in 3D; at home in 4D.',
+    params: [
+      { key: 'res', label: 'Resolution', min: 24, max: 64, step: 2, def: 44 },
+    ],
+    build: ({ res }) => buildProjectivePlane(res),
+  },
+  {
+    id: 'glome-grid', name: 'Glome (Latitude Shells)', group: G.CURVED,
+    cells: 'S³ as a stack of spheres',
+    blurb: 'The same 3-sphere as the Hopf fibration, seen the other way: ordinary spheres that inflate, peak, and deflate as you sweep along w. Compare the two!',
+    params: [
+      { key: 'shells', label: 'Sphere shells', min: 3, max: 11, step: 1, def: 7 },
+    ],
+    build: ({ shells }) => buildGlomeGrid(shells),
+  },
+  {
     id: 'cx-sqrt', name: 'w = √z', group: G.COMPLEX,
     cells: 'Riemann surface, 2 sheets',
     blurb: 'The square root has two answers, so its graph is a two-sheeted surface that self-intersects in 3D. In 4D the sheets pass by cleanly — color keeps them apart.',
@@ -703,6 +859,12 @@ export const SHAPES = [
     build: () => complexGraph(COMPLEX_SHAPES.sinz.f, COMPLEX_SHAPES.sinz.opts),
   },
   {
+    id: 'cx-jouk', name: 'w = z + 1/z (Joukowski)', group: G.COMPLEX,
+    cells: 'the airfoil map',
+    blurb: 'The conformal map that turned circles into airplane-wing profiles a century ago. The unit circle gets crushed flat; everything else flows around it.',
+    build: () => complexGraph(COMPLEX_SHAPES.jouk.f, COMPLEX_SHAPES.jouk.opts),
+  },
+  {
     id: 'torus-knot', name: '4D Torus Knot (p,q)', group: G.CURVES,
     cells: 'closed curve on the Clifford torus',
     blurb: 'A (p,q) knot wound around the Clifford torus, living directly on the 3-sphere. Coprime p and q give a single unbroken loop.',
@@ -731,6 +893,21 @@ export const SHAPES = [
     build: ({ a, b, c, d }) => paramCurve(
       (t) => [Math.cos(a * t), Math.sin(b * t), Math.cos(c * t), Math.sin(d * t)],
       { n: 1600, closed: true },
+    ),
+  },
+  {
+    id: 'winding', name: 'Irrational Winding', group: G.CURVES,
+    cells: 'a line that never comes home',
+    blurb: 'Wind around the Clifford torus with the golden ratio as your slope and the path never closes — run it forever and it visits every point without repeating once.',
+    params: [
+      { key: 'turns', label: 'Turns drawn', min: 10, max: 120, step: 5, def: 50 },
+    ],
+    build: ({ turns }) => paramCurve(
+      (t) => {
+        const s = Math.SQRT1_2;
+        return [s * Math.cos(t), s * Math.sin(t), s * Math.cos(PHI * t), s * Math.sin(PHI * t)];
+      },
+      { n: Math.min(8000, turns * 90), t0: 0, t1: turns * Math.PI, closed: false },
     ),
   },
 ];
