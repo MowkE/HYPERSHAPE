@@ -14,9 +14,25 @@ import math
 
 from math_4d import (
     identity, apply_transform, ROTATION_FUNCS,
-    generate_tesseract, generate_5cell,
+    generate_tesseract, generate_5cell, generate_16cell, generate_24cell,
+    generate_600cell, generate_120cell, generate_rectified_tesseract,
+    generate_duoprism, generate_clifford_torus, generate_klein_bottle,
     compute_face_normals,
 )
+
+# key → (name, generator)
+SHAPE_REGISTRY = {
+    '1': ('Tesseract (8-cell)',      generate_tesseract),
+    '2': ('5-Cell (4-simplex)',      generate_5cell),
+    '3': ('16-Cell',                 generate_16cell),
+    '4': ('24-Cell',                 generate_24cell),
+    '5': ('600-Cell',                generate_600cell),
+    '6': ('120-Cell',                generate_120cell),
+    '7': ('Duoprism 6x6',            generate_duoprism),
+    '8': ('Rectified Tesseract',     generate_rectified_tesseract),
+    '9': ('Clifford Torus',          generate_clifford_torus),
+    '0': ('Klein Bottle (4D)',       generate_klein_bottle),
+}
 
 # ──────────────────────────────────────────────────────────────────────────────
 # GLSL Shaders
@@ -166,13 +182,9 @@ class FourDVisualizer(mglw.WindowConfig):
         self.edge_prog = self.ctx.program(vertex_shader=EDGE_VS,
                                            fragment_shader=EDGE_FS)
 
-        # allocate streaming buffers (large enough for tesseract)
-        self._max_tri = 60          # triangles
-        self._max_edge = 40         # edges
-        surf_bytes = self._max_tri * 3 * 7 * 4   # 3 verts × 7 floats × 4B
-        edge_bytes = self._max_edge * 2 * 4 * 4  # 2 verts × 4 floats × 4B
-        self.surface_vbo = self.ctx.buffer(reserve=surf_bytes)
-        self.edge_vbo = self.ctx.buffer(reserve=edge_bytes)
+        # streaming buffers — orphan() regrows them per shape as needed
+        self.surface_vbo = self.ctx.buffer(reserve=4096)
+        self.edge_vbo = self.ctx.buffer(reserve=4096)
         self.surface_vao = self.ctx.vertex_array(
             self.surface_prog,
             [(self.surface_vbo, '3f 1f 3f', 'in_position', 'in_w', 'in_normal')],
@@ -182,16 +194,21 @@ class FourDVisualizer(mglw.WindowConfig):
             [(self.edge_vbo, '3f 1f', 'in_position', 'in_w')],
         )
 
-        # load default object
-        self._load_object('tesseract')
+        print("Shape keys:")
+        for k, (name, _) in SHAPE_REGISTRY.items():
+            print(f"  {k}  {name}")
+
+        self._load_object('1')
 
     # ── object management ────────────────────────────────────────────────
-    def _load_object(self, name):
-        if name == 'tesseract':
-            self.base_verts, self.edges, self.tris = generate_tesseract()
-        elif name == '5cell':
-            self.base_verts, self.edges, self.tris = generate_5cell()
+    def _load_object(self, key):
+        name, gen = SHAPE_REGISTRY[key]
+        self.base_verts, self.edges, self.tris = gen()
         self.current_object = name
+        self.wnd.title = f"4-D Visualiser — {name}"
+        print(f"Loaded: {name}  "
+              f"({len(self.base_verts)} vertices, {len(self.edges)} edges, "
+              f"{len(self.tris)} faces)")
         self._dirty = True
 
     # ── camera helpers ───────────────────────────────────────────────────
@@ -215,7 +232,7 @@ class FourDVisualizer(mglw.WindowConfig):
         return Matrix44.perspective_projection(
             55.0, w / max(h, 1), 0.1, 100.0, dtype='f4')
 
-    # ── geometry rebuild ─────────────────────────────────────────────────
+    # ── geometry rebuild (vectorized) ────────────────────────────────────
     def _rebuild(self):
         # apply 4-D rotation
         m = identity()
@@ -225,22 +242,23 @@ class FourDVisualizer(mglw.WindowConfig):
         tv = apply_transform(self.base_verts, m)
         self._tv = tv  # keep for sorting
 
-        # surface data  (N_tri × 3verts × 7 floats)
-        normals = compute_face_normals(tv, self.tris)
-        buf = np.empty((len(self.tris), 3, 7), dtype=np.float32)
-        for ti, (a, b, c) in enumerate(self.tris):
-            n = normals[ti]
-            for vi, idx in enumerate((a, b, c)):
-                buf[ti, vi, :3] = tv[idx, :3]
-                buf[ti, vi, 3]  = tv[idx, 3]
-                buf[ti, vi, 4:] = n
-        self._surf_buf = buf   # shape (N, 3, 7)
+        # surface data  (N_tri × 3 verts × 7 floats: xyz, w, normal)
+        if len(self.tris):
+            normals = compute_face_normals(tv, self.tris)
+            corners = tv[self.tris]                      # (T, 3, 5)
+            buf = np.empty((len(self.tris), 3, 7), dtype=np.float32)
+            buf[:, :, :3] = corners[:, :, :3]
+            buf[:, :, 3] = corners[:, :, 3]
+            buf[:, :, 4:] = normals[:, None, :]
+        else:
+            buf = np.zeros((0, 3, 7), dtype=np.float32)
+        self._surf_buf = buf
 
-        # edge data  (N_edge × 2verts × 4 floats)
+        # edge data  (N_edge × 2 verts × 4 floats)
+        seg = tv[self.edges]                             # (E, 2, 5)
         ebuf = np.empty((len(self.edges), 2, 4), dtype=np.float32)
-        for ei, (a, b) in enumerate(self.edges):
-            ebuf[ei, 0, :3] = tv[a, :3]; ebuf[ei, 0, 3] = tv[a, 3]
-            ebuf[ei, 1, :3] = tv[b, :3]; ebuf[ei, 1, 3] = tv[b, 3]
+        ebuf[:, :, :3] = seg[:, :, :3]
+        ebuf[:, :, 3] = seg[:, :, 3]
         self._edge_bytes = ebuf.tobytes()
         self._n_edge_verts = len(self.edges) * 2
         self._dirty = False
@@ -276,7 +294,7 @@ class FourDVisualizer(mglw.WindowConfig):
         self.ctx.depth_func = '<='
 
         # faces (depth-sorted, no depth-write for translucency)
-        if self.show_faces:
+        if self.show_faces and len(self._surf_buf):
             s_bytes, n_verts = self._sorted_surface_bytes()
             self.surface_vbo.orphan(len(s_bytes))
             self.surface_vbo.write(s_bytes)
@@ -288,7 +306,7 @@ class FourDVisualizer(mglw.WindowConfig):
             self.surface_vao.render(moderngl.TRIANGLES, vertices=n_verts)
 
         # edges
-        if self.show_edges:
+        if self.show_edges and self._n_edge_verts:
             self.edge_vbo.orphan(len(self._edge_bytes))
             self.edge_vbo.write(self._edge_bytes)
             self.edge_prog['m_proj'].write(proj)
@@ -332,15 +350,14 @@ class FourDVisualizer(mglw.WindowConfig):
         keys = self.wnd.keys
         if action == keys.ACTION_PRESS:
             self._shift = bool(modifiers.shift)
+            number_keys = {
+                getattr(keys, f'NUMBER_{i}'): str(i) for i in range(10)
+            }
             if key == keys.SPACE:
                 self.auto_rotate = not self.auto_rotate
                 print("Auto-rotate:", "ON" if self.auto_rotate else "OFF")
-            elif key == keys.NUMBER_1:
-                self._load_object('tesseract')
-                print("Loaded: Tesseract")
-            elif key == keys.NUMBER_2:
-                self._load_object('5cell')
-                print("Loaded: 5-Cell")
+            elif key in number_keys:
+                self._load_object(number_keys[key])
             elif key == keys.E:
                 self.show_edges = not self.show_edges
             elif key == keys.F:
