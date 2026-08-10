@@ -263,7 +263,7 @@ export class Renderer {
     // ── pass 1: shape into offscreen target, additive ──
     gl.bindFramebuffer(gl.FRAMEBUFFER, scene.fbo);
     gl.viewport(0, 0, scene.w, scene.h);
-    gl.clearColor(0.012, 0.014, 0.032, 1);
+    gl.clearColor(0.010, 0.010, 0.008, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);

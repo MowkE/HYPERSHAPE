@@ -193,10 +193,30 @@ lab = initLab({
 drawLegend(state);
 flashToast('drag — rotate in 3D · right-drag — rotate in 4D · scroll — zoom · shift+scroll — move along w');
 
+// ── telemetry strip ──
+const tele = Object.fromEntries(
+  ['obj', 'v', 'e', 'rot', 'w', 'fps'].map((k) => [k, document.getElementById('tele-' + k)]),
+);
+let fpsEma = 60;
+let teleTick = 0;
+
+function updateTelemetry() {
+  const mod = (a) => (((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)).toFixed(2);
+  tele.obj.textContent = shape.def.name;
+  tele.v.textContent = (shape.verts.length / 4).toLocaleString();
+  tele.e.textContent = (shape.edges.length / 2).toLocaleString();
+  tele.rot.textContent =
+    `XW ${mod(state.angles.XW)} · YW ${mod(state.angles.YW)} · ZW ${mod(state.angles.ZW)}`;
+  tele.w.textContent = (state.wTarget >= 0 ? '+' : '') + state.wTarget.toFixed(2);
+  tele.fps.textContent = Math.round(fpsEma);
+}
+
 let last = performance.now();
 function frame(now) {
   const dt = Math.min((now - last) / 1000, 0.05);
   last = now;
+  fpsEma += (1 / Math.max(dt, 1e-4) - fpsEma) * 0.08;
+  if ((teleTick++ & 7) === 0) updateTelemetry();
 
   if (state.spinning) {
     for (const p of PLANES) state.angles[p] += state.velocities[p] * dt;

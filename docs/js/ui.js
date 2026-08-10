@@ -53,7 +53,8 @@ function toggle(parent, label, value, onChange) {
 function section(parent, title, open = true) {
   const det = el('details', 'panel-section');
   det.open = open;
-  const sum = el('summary', null, title);
+  const sum = el('summary');
+  sum.append(el('span', 'sec-label', title));
   det.append(sum);
   const body = el('div', 'section-body');
   det.append(body);
@@ -65,10 +66,10 @@ export function buildUI(state, hooks) {
   const panel = $('#panel');
 
   // ── shape picker ──
-  const shapeBody = section(panel, 'Shape', true);
+  const shapeBody = section(panel, 'Object', true);
   const list = el('div', 'shape-list');
   shapeBody.append(list);
-  const launch = el('button', 'lab-launch', '✨ Make your own shape!');
+  const launch = el('button', 'lab-launch', 'SHAPE LAB · BUILD YOUR OWN');
   launch.addEventListener('click', () => hooks.openLab());
   list.append(launch);
   let lastGroup = null;
@@ -85,7 +86,7 @@ export function buildUI(state, hooks) {
   }
 
   // ── shape params (rebuilt per shape) ──
-  const paramBody = section(panel, 'Shape parameters', true);
+  const paramBody = section(panel, 'Parameters', true);
   const paramHost = el('div');
   paramBody.append(paramHost);
 
@@ -101,10 +102,10 @@ export function buildUI(state, hooks) {
   }
 
   // ── rotation: 3D planes in the left column, 4D planes in the right ──
-  const rotBody = section(panel, '4D rotation', true);
+  const rotBody = section(panel, 'Rotation', true);
   const rotGrid = el('div', 'rot-grid');
-  rotGrid.append(el('div', 'hint-line', '3D planes'),
-                 el('div', 'hint-line hint-4d', 'into w — 4D'));
+  rotGrid.append(el('div', 'hint-line', 'Spatial'),
+                 el('div', 'hint-line hint-4d', 'Into w'));
   rotBody.append(rotGrid);
   const velSliders = {};
   for (const plane of ['XY', 'XW', 'XZ', 'YW', 'YZ', 'ZW']) {
@@ -132,7 +133,7 @@ export function buildUI(state, hooks) {
   }
 
   // ── view ──
-  const viewBody = section(panel, 'View & color', true);
+  const viewBody = section(panel, 'Display', true);
   const selRow = el('div', 'row2');
   viewBody.append(selRow);
 
@@ -168,8 +169,8 @@ export function buildUI(state, hooks) {
   });
 
   // ── w-axis tools ──
-  const wBody = section(panel, 'The w axis', true);
-  const wSlider = slider(wBody, 'w position', -1.6, 1.6, 0.01, state.wTarget, (v) => { state.wTarget = v; });
+  const wBody = section(panel, 'W-axis', true);
+  const wSlider = slider(wBody, 'W position', -1.6, 1.6, 0.01, state.wTarget, (v) => { state.wTarget = v; });
   const wToggles = el('div', 'row2');
   wBody.append(wToggles);
   toggle(wToggles, 'Focus shell', state.focusOn, (v) => { state.focusOn = v; });

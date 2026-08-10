@@ -32,25 +32,25 @@ const BASES = {
 // which sliders each base shows
 const MAGIC_SLIDERS = {
   donut: [
-    { key: 'waves', label: '🌊 Waves', min: 0, max: 8, step: 1 },
-    { key: 'twist', label: '🌀 Twist', min: 0, max: 6, step: 1 },
-    { key: 'wob', label: '🫨 Wobble', min: 0, max: 0.6, step: 0.05 },
+    { key: 'waves', label: 'Waves', min: 0, max: 8, step: 1 },
+    { key: 'twist', label: 'Twist', min: 0, max: 6, step: 1 },
+    { key: 'wob', label: 'Wobble', min: 0, max: 0.6, step: 0.05 },
   ],
   ball: [
-    { key: 'waves', label: '🌈 Ripples', min: 0, max: 8, step: 1 },
-    { key: 'twist', label: '🌀 Twist', min: 0, max: 6, step: 1 },
-    { key: 'wob', label: '🫨 Ripple size', min: 0, max: 0.6, step: 0.05 },
+    { key: 'waves', label: 'Ripples', min: 0, max: 8, step: 1 },
+    { key: 'twist', label: 'Twist', min: 0, max: 6, step: 1 },
+    { key: 'wob', label: 'Ripple size', min: 0, max: 0.6, step: 0.05 },
   ],
   star: [
-    { key: 'sides', label: '🔺 Points', min: 3, max: 9, step: 1 },
-    { key: 'waves', label: '🌊 Waves', min: 0, max: 8, step: 1 },
-    { key: 'wob', label: '🫨 Wobble', min: 0, max: 0.6, step: 0.05 },
+    { key: 'sides', label: 'Points', min: 3, max: 9, step: 1 },
+    { key: 'waves', label: 'Waves', min: 0, max: 8, step: 1 },
+    { key: 'wob', label: 'Wobble', min: 0, max: 0.6, step: 0.05 },
   ],
   ribbon: [
-    { key: 'sides', label: '🔁 Loops one way', min: 1, max: 8, step: 1 },
-    { key: 'loops', label: '🔁 Loops other way', min: 1, max: 8, step: 1 },
-    { key: 'waves', label: '🌊 Waves', min: 0, max: 9, step: 1 },
-    { key: 'wob', label: '🫨 Wobble', min: 0, max: 0.6, step: 0.05 },
+    { key: 'sides', label: 'Loops one way', min: 1, max: 8, step: 1 },
+    { key: 'loops', label: 'Loops other way', min: 1, max: 8, step: 1 },
+    { key: 'waves', label: 'Waves', min: 0, max: 9, step: 1 },
+    { key: 'wob', label: 'Wobble', min: 0, max: 0.6, step: 0.05 },
   ],
 };
 
@@ -101,13 +101,13 @@ const MAGIC_BLURBS = {
 // ───────────────────────── code mode ─────────────────────────
 
 const EXAMPLES = {
-  '🔗 Two linked rings': `// Two circles in perpendicular planes.
+  'Two linked rings': `// Two circles in perpendicular planes.
 // In 4D they link through each other without ever touching!
 const ringA = paramCurve(t => [Math.cos(t), Math.sin(t), 0, 0], { n: 64 });
 const ringB = paramCurve(t => [0, 0, Math.cos(t), Math.sin(t)], { n: 64 });
 return merge(ringA, ringB);`,
 
-  '🎯 Connect the dots': `// Place points, and minDistEdges connects every
+  'Connect the dots': `// Place points, and minDistEdges connects every
 // closest pair for you. These 8 points make the 16-cell —
 // change them and invent your own polytope!
 const verts = [];
@@ -122,7 +122,7 @@ const edges = minDistEdges(verts);
 // triangles let the CT-scan slicer cut it open
 return { verts, edges, tris: triCliques(verts.length, edges) };`,
 
-  '🌊 Wavy donut': `// gridSurface sweeps u and v over a grid and connects
+  'Wavy donut': `// gridSurface sweeps u and v over a grid and connects
 // neighbors. Return [x, y, z, w] for each point.
 const r = Math.SQRT1_2;
 return gridSurface((u, v) => [
@@ -132,7 +132,7 @@ return gridSurface((u, v) => [
   r * Math.sin(v),
 ], { nu: 48, nv: 48, wrapU: true, wrapV: true });`,
 
-  '🌀 Super spiral': `// A curve that spirals through all four dimensions.
+  'Super spiral': `// A curve that spirals through all four dimensions.
 return paramCurve(t => [
   Math.cos(t) * (1 - t / 60),
   Math.sin(t) * (1 - t / 60),
@@ -140,7 +140,7 @@ return paramCurve(t => [
   Math.sin(t * 1.618) * (t / 60),
 ], { n: 3000, t0: 0, t1: 18 * Math.PI, closed: false });`,
 
-  '🧮 Complex function z⁴': `// Every complex function is secretly a 4D surface:
+  'Complex function z⁴': `// Every complex function is secretly a 4D surface:
 // position = (Re z, Im z, Re f) and COLOR = Im f.
 return gridSurface((x, y) => {
   const re = x**4 - 6*x*x*y*y + y**4;   // Re((x+iy)^4)
@@ -278,7 +278,7 @@ export function initLab({ onShape }) {
     o.value = name; o.textContent = name;
     exSel.append(o);
   }
-  editor.value = EXAMPLES['🔗 Two linked rings'];
+  editor.value = EXAMPLES['Two linked rings'];
   exSel.addEventListener('change', () => { editor.value = EXAMPLES[exSel.value]; error(''); });
 
   const runCode = () => {
@@ -287,7 +287,7 @@ export function initLab({ onShape }) {
       showShape(runUserCode(editor.value), $('lab-name').value.trim(),
         'Written in the Shape Lab, one [x, y, z, w] at a time.');
     } catch (e) {
-      error('🤔 ' + e.message);
+      error(e.message);
     }
   };
   $('lab-run').addEventListener('click', runCode);
@@ -368,11 +368,11 @@ export function initLab({ onShape }) {
     url.hash = 'lab=' + btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     try {
       await navigator.clipboard.writeText(url.toString());
-      $('lab-share').textContent = '✅ Copied!';
+      $('lab-share').textContent = 'COPIED ✓';
     } catch {
       prompt('Copy this link:', url.toString());
     }
-    setTimeout(() => { $('lab-share').textContent = '🔗 Copy link'; }, 1600);
+    setTimeout(() => { $('lab-share').textContent = 'COPY LINK'; }, 1600);
   });
 
   // ── open / close ──
@@ -410,7 +410,7 @@ export function initLab({ onShape }) {
         editor.value = payload.c;
         open();
         setMode('code');
-        error('👀 This code came from a shared link. Read it, then press ▶ Run.');
+        error('Code loaded from a shared link. Read it, then press RUN.');
       }
     } catch { /* malformed hash — ignore */ }
   }
